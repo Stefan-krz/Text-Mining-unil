@@ -45,12 +45,10 @@ topall <- rbind(toprap,toppop,toprock,toprb)
 
 install.packages("genius")
 library(genius)
-learnr::run_tutorial("genius_tutorial", "genius")
+
+#the folowing code allows us to try the package
+#learnr::run_tutorial("genius_tutorial", "genius")
 all_lyricsrap <- toprap %>% add_genius(artist, song, type = "lyrics")
 final_lyrics <- all_lyrics %>% group_by(artist,song,genre) %>% summarize(lyrics= toString(lyric))
 
 
-
-install.packages("genius")
-library(genius)
-learnr::run_tutorial("genius_tutorial", "genius")
