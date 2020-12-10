@@ -49,6 +49,7 @@ library(genius)
 #the folowing code allows us to try the package
 #learnr::run_tutorial("genius_tutorial", "genius")
 all_lyricsrap <- toprap %>% add_genius(artist, song, type = "lyrics")
-final_lyrics <- all_lyrics %>% group_by(artist,song,genre) %>% summarize(lyrics= toString(lyric))
-
+final_lyrics <- all_lyrics %>% group_by(artist,song,genre) %>% summarize(lyrics= toString(lyric)) %>% ungroup()
+ 
+ fwrite(final_lyrics, "final_lyrics.csv")
 
