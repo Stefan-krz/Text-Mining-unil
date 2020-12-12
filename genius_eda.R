@@ -16,7 +16,7 @@ flyrics.tok <- unnest_tokens(final_lyrics, output="word", input="lyrics", to_low
 #remove stop words
 
 
-flyrics.tok1 <- anti_join(flyrics.tok, stop_words, by = "word")  %>% mutate(nchar= nchar(word)) %>% filter(nchar > 2)
+flyrics.tok1 <- anti_join(flyrics.tok, stop_words, by = "word")  %>% mutate(nchar= nchar(word)) %>% filter(nchar > 3)
 
 
 
@@ -24,10 +24,16 @@ flyrics.tok1 <- anti_join(flyrics.tok, stop_words, by = "word")  %>% mutate(ncha
 
 
 
-lyrics.fr <- flyrics.tok1 %>% group_by(artist,song,genre) %>% count(word, sort=TRUE) %>% ungroup()
 
-index <- top_n(lyrics.fr, 15)
-lyrics.fr %>% filter(word %in% index$word) %>% ggplot(aes(x=word, y=n)) + geom_col() + coord_flip() +facet_wrap(~genre, ncol = 2)
+# count the average number of tokens for each genre 
+
+ntoken <- flyrics.tok1 %>% group_by(genre,song) %>% mutate(ntoken= n())
+ntoken %>% group_by(genre) %>% summarise(average_token =mean(ntoken)) %>%   ggplot(aes(x = genre, y = average_token, fill = genre)) + 
+  geom_bar(stat = "identity", alpha = 0.8)
+
+ntoken2 <- flyrics.tok1 %>% group_by(genre,song) %>% mutate(dist_ntoken= n_distinct(word))
+ntoken2 %>% group_by(genre) %>% summarise(distinct_average_token =mean(dist_ntoken)) %>%   ggplot(aes(x = genre, y = distinct_average_token, fill = genre)) + 
+  geom_bar(stat = "identity", alpha = 0.8)
 
 #we sould maybee remove words less than 3 letters to better result ? because a lot of la la la na na na  from song. 
 
@@ -75,17 +81,21 @@ lyrics.tok <-  tokens(lyrics.cp,
 lyrics.tfidf <- dfm_tfidf(lyrics.dfm)  
 
 
+
+
+
 #wordcloud 
 
 lyrics_freq <- textstat_frequency(lyrics.dfm)
+sotu_collocations <- textstat_collocations(lyrics.tok, min_count = 25)
 
-textplot_wordcloud(lyrics.tfidf)
+
 
 
 
 #add TTR in data set to use later for classification
 
-  lyrics.div <- textstat_lexdiv(lyrics.dfm, measure = "TTR")
+    lyrics.div <- textstat_lexdiv(lyrics.dfm, measure = "TTR")
 
 # and MATTR (give same result) 
 lyrics.div2 <- textstat_lexdiv(lyrics.tok, measure = "MATTR", MATTR_window = 5)
@@ -99,9 +109,43 @@ lyrics.div %>%
 
 final_lyrics1 <- cbind(final_lyrics,TTR = lyrics.div$TTR,MATTR = lyrics.div2$MATTR)
 
-#visualise difference of ttr among genre
+#visualise difference of TTR among genre
+
+final_lyrics1 %>% group_by(genre) %>% summarize(mean= mean(TTR)) %>% ungroup() %>%   ggplot(aes(x = genre, y = mean, fill = genre)) + 
+  geom_bar(stat = "identity", alpha = 0.8)
+
+#MATTR
+  
 
 final_lyrics1 %>% group_by(genre) %>% summarize(mean= mean(MATTR)) %>% ungroup() %>%   ggplot(aes(x = genre, y = mean, fill = genre)) + 
   geom_bar(stat = "identity", alpha = 0.8)
-  
+
+
+#visualistion of how word are used
+
+lyrics.fr <- flyrics.tok1 %>% group_by(artist,song,genre) %>% count(word, sort=TRUE) %>% ungroup()
+
+index <- top_n(lyrics.fr, 15)
+lyrics.fr %>% filter(word %in% index$word) %>% ggplot(aes(x=word, y=n)) + geom_col() + coord_flip() +facet_wrap(~genre, ncol = 2)
+
+
+
+
+index2 <- lyrics.fr %>% group_by(genre) %>% top_n(4)
+lyrics.fr %>% filter(word %in% index2$word) %>% ggplot(aes(word, n)) + geom_col() + coord_flip() +facet_wrap(~genre, ncol = 2)
+
+
+# TF IDF by song
+ 
+
+song_tf_idf <- flyrics.tok1 %>% 
+  count(song, word, sort = TRUE) %>%
+  bind_tf_idf(word, song, n)
+
+#tf idf among genre 
+
+song_tf_idf <- flyrics.tok1 %>% 
+  count(genre, word, sort = TRUE) %>%
+  bind_tf_idf(word, genre, n)
+
 

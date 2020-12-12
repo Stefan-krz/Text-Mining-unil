@@ -1,4 +1,4 @@
-get_sentiments("nrc")
+#addin sentiment dictionnary to data set
 
 lyrics.sent <- flyrics.tok1 %>%
   inner_join(get_sentiments("nrc"))
@@ -23,12 +23,12 @@ lyrics.sent <- flyrics.tok1 %>%
 # visualise by genre
 
 
-aggregate(value~genre, data=lyrics.sent, FUN=mean) %>% 
-  ggplot(aes(x = genre, y = value)) + 
-  geom_bar(stat = "identity") + coord_flip()
+  aggregate(value~genre, data=lyrics.sent, FUN=mean) %>% 
+    ggplot(aes(x = genre, y = value)) + 
+    geom_bar(stat = "identity") + coord_flip()
 #it may help classify so we add value by song  info to dataset
 
 songval <- aggregate(value~song, data=lyrics.sent, FUN=mean)
-final_lyrics <- final_lyrics %>% inner_join(songval)
+final_lyrics <- final_lyrics1 %>% inner_join(songval)
 
 
