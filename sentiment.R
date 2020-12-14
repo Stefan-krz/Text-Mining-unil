@@ -1,4 +1,7 @@
 #addin sentiment dictionnary to data set
+flyrics.tok <- unnest_tokens(final_lyrics1, output="word", input="lyrics", to_lower=TRUE, strip_punct=TRUE, 
+                             strip_numeric=TRUE)
+flyrics.tok1 <- anti_join(flyrics.tok, stop_words, by = "word")  %>% mutate(nchar= nchar(word)) %>% filter(nchar > 3)
 
 lyrics.sent <- flyrics.tok1 %>%
   inner_join(get_sentiments("nrc"))

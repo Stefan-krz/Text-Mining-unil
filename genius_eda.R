@@ -38,9 +38,9 @@ ntoken2 %>% group_by(genre) %>% summarise(distinct_average_token =mean(dist_ntok
 #we sould maybee remove words less than 3 letters to better result ? because a lot of la la la na na na  from song. 
 
 
-index <- lyrics.fr  %>% mutate(ifelse(nchar())) group_by(genre) %>% top_n(10)
-index2 <- lyrics.fr  %>% filter(n> 10)%>% group_by(song) %>% top_n(1)
-lyrics.fr %>% filter(word %in% index$word) %>% ggplot(aes(word, n)) + geom_col() + coord_flip() +facet_wrap(~genre, ncol = 2)
+index <- flyrics.tok   %>% group_by(genre) %>% top_n(10)
+index2 <- flyrics.tok  %>% filter(n> 10)%>% group_by(song) %>% top_n(1)
+flyrics.tok %>% filter(word %in% index$word) %>% ggplot(aes(word, n)) + geom_col() + coord_flip() +facet_wrap(~genre, ncol = 2)
 
 
 #Use quanteda library to create dfm 
@@ -66,12 +66,12 @@ lyrics.dfm <-  dfm(lyrics.cp,
                    remove=c(stopwords("english")),
                    remove_punct=TRUE,
                    remove_number=TRUE,
-                   remove_symbols=TRUE)
+                   remove_symbols=TRUE) 
 
 lyrics.tok <-  tokens(lyrics.cp,
                    remove_punct=TRUE,
                    remove_number=TRUE,
-                   remove_symbols=TRUE)
+                   remove_symbols=TRUE) 
 
 
 
@@ -144,7 +144,7 @@ song_tf_idf <- flyrics.tok1 %>%
 
 #tf idf among genre 
 
-song_tf_idf <- flyrics.tok1 %>% 
+genre_tf_idf <- flyrics.tok %>% 
   count(genre, word, sort = TRUE) %>%
   bind_tf_idf(word, genre, n)
 

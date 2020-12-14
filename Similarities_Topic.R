@@ -1,13 +1,9 @@
 library(reshape2)
 library(ggplot2)
 
-#not working
-
-#freqword <- song_tf_idf %>% filter(tf_idf==0) %>% distinct(word)
-#a <- top_n(freqword,30)
 
 
-#lyrics.tok <- lyrics.tok %>% tokens_remove(pattern= a, value="fixed")
+
 #tm_map
 
 crude.jac <- textstat_simil(lyrics.tfidf, method = "jaccard", margin = "documents")
@@ -35,6 +31,15 @@ biplot(y=tmod$docs[,2:3],x=tmod$features[,2:3], col=c("grey","red"),
 
 #LDA
 # beta's are turned to prob scales
+
+lyrics.dfm <-  dfm(lyrics.cp,
+                   stem=FALSE,
+                   tolower=TRUE,
+                   remove=c(stopwords("english")),
+                   remove_punct=TRUE,
+                   remove_number=TRUE,
+                   remove_symbols=TRUE)
+
 K <- 5
 lyrics.dfm <- convert(lyrics.dfm, to = "topicmodels")
 lda <- LDA(lyrics.dfm, k = K) 
@@ -64,12 +69,69 @@ gamma.td <- tidy(lda, matrix = "gamma")
 
 test <- cbind(distinct( gamma.td[,1]),final_lyrics) %>% select(document,genre)
 
-gamma.td <- left_join(gamma.td,test, by= "document") %>% 
+gamma.td <- left_join(gamma.td,test, by= "document")  
 
 gamma.td %>%
-  ggplot(aes(document, gamma, fill = factor(genre))) +
+  ggplot(aes(factor(document,levels = lvl), gamma, fill = factor(genre))) +
   geom_col(show.legend = TRUE) +
   facet_wrap(~ topic, scales = "free") +
   coord_flip() +
   scale_x_reordered()
 
+#we get rid of some words that are not common to any genre and pollute analysis
+flyrics.tok <- unnest_tokens(final_lyrics, output="word", input="lyrics", to_lower=TRUE, strip_punct=TRUE, 
+                             strip_numeric=TRUE)
+flyrics.tokRemove <- flyrics.tok %>%  mutate(nchar= nchar(word)) %>% filter(nchar < 3) %>% select(word)
+flyrics.tokRemove <- flyrics.tokRemove %>% distinct(word)
+freqword1 <- genre_tf_idf %>% filter(tf_idf==0) %>% distinct(word)
+freqword2 <- song_tf_idf %>% filter(tf_idf>=0.3) %>% distinct(word)
+freqword= rbind(freqword1,freqword2)
+a <- rbind(freqword,flyrics.tokRemove)
+
+# new corpus without the dictionary a
+
+newlyrics.dfm <-  dfm(lyrics.cp,
+                   stem=FALSE,
+                   tolower=TRUE,
+                   remove=c(stopwords("english"),a$word),
+                   remove_punct=TRUE,
+                   remove_number=TRUE,
+                   remove_symbols=TRUE) 
+  K <- 5
+  newlyrics.dfm <- convert(newlyrics.dfm, to = "topicmodels")
+  lda <- LDA(newlyrics.dfm, k = K) 
+  
+  
+  beta.td <- tidy(lda, matrix = "beta") 
+  beta.td
+  
+#visualization of Topics with treatment
+
+beta.top.terms <- beta.td %>%
+  group_by(topic) %>%
+  top_n(10, beta) %>%
+  ungroup() %>%
+  arrange(topic, -beta) 
+
+beta.top.terms %>%
+  mutate(term = reorder_within(term, beta, topic)) %>%
+  ggplot(aes(term, beta, fill = factor(topic))) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~ topic, scales = "free") +
+  coord_flip() +
+  scale_x_reordered()
+
+#Gamma's
+gamma.td <- tidy(lda, matrix = "gamma") 
+test <- cbind(distinct( gamma.td[,1]),final_lyrics) %>% select(document,genre)
+gamma.td <- left_join(gamma.td,test, by= "document") 
+
+#we create levels to order the gamma's
+lvl<- arrange(test,genre)
+lvl <- lvl$document
+
+gamma.td %>% ggplot(aes(factor(document,levels = lvl), gamma, fill = factor(genre))) +
+  geom_col(show.legend = TRUE) +
+  facet_wrap(~ topic, scales = "free") +
+  coord_flip() +
+  scale_x_reordered()
