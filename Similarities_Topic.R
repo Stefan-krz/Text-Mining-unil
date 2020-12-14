@@ -22,7 +22,17 @@ library(topicmodels)
 
 library(quanteda.textmodels)
 
-tmod= textmodel_lsa(lyrics.dfm, nd=3)
+lyrics.cp <- corpus(final_lyrics$lyrics)
+
+lyrics.dfm <-  dfm(lyrics.cp,
+                   stem=FALSE,
+                   tolower=TRUE,
+                   remove=c(stopwords("english")),
+                   remove_punct=TRUE,
+                   remove_number=TRUE,
+                   remove_symbols=TRUE)
+
+tmod= textmodel_lsa(lyrics.dfm, nd=10)
 tmod$docs
 
 biplot(y=tmod$docs[,2:3],x=tmod$features[,2:3], col=c("grey","red"),
@@ -31,6 +41,7 @@ biplot(y=tmod$docs[,2:3],x=tmod$features[,2:3], col=c("grey","red"),
 
 #LDA
 # beta's are turned to prob scales
+lyrics.cp <- corpus(final_lyrics$lyrics)
 
 lyrics.dfm <-  dfm(lyrics.cp,
                    stem=FALSE,
@@ -71,12 +82,17 @@ test <- cbind(distinct( gamma.td[,1]),final_lyrics) %>% select(document,genre)
 
 gamma.td <- left_join(gamma.td,test, by= "document")  
 
+#creating list of levels to arrange documents by genre for better visualization
+
+
 gamma.td %>%
-  ggplot(aes(factor(document,levels = lvl), gamma, fill = factor(genre))) +
+  ggplot(aes(document, gamma, fill = genre)) +
   geom_col(show.legend = TRUE) +
   facet_wrap(~ topic, scales = "free") +
   coord_flip() +
-  scale_x_reordered()
+  scale_x_reordered()+
+ theme(axis.text.x=element_blank(),
+       axis.text.y=element_blank()) 
 
 #we get rid of some words that are not common to any genre and pollute analysis
 flyrics.tok <- unnest_tokens(final_lyrics, output="word", input="lyrics", to_lower=TRUE, strip_punct=TRUE, 
@@ -130,8 +146,10 @@ gamma.td <- left_join(gamma.td,test, by= "document")
 lvl<- arrange(test,genre)
 lvl <- lvl$document
 
-gamma.td %>% ggplot(aes(factor(document,levels = lvl), gamma, fill = factor(genre))) +
+gamma.td %>% ggplot(aes(factor(document,levels = lvl), gamma, fill = genre)) +
   geom_col(show.legend = TRUE) +
   facet_wrap(~ topic, scales = "free") +
   coord_flip() +
-  scale_x_reordered()
+  scale_x_reordered()+
+  theme(axis.text.x=element_blank(),
+        axis.text.y=element_blank()) 
